@@ -36,7 +36,10 @@ RUN docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/i
         opcache \
         swoole
 
-RUN curl -s https://getcomposer.org/download/1.9.2/composer.phar -o /usr/local/bin/composer && \
+RUN curl -s https://getcomposer.org/download/1.10.16/composer.phar -o /usr/local/bin/composer-1.10.16 && \
+    chmod +x /usr/local/bin/composer-1.10.16
+
+RUN curl -s https://getcomposer.org/composer-stable.phar -o /usr/local/bin/composer && \
     chmod +x /usr/local/bin/composer
 
 RUN adduser -D ${APP_USER} -u ${DEFAULT_USER_UID} -s /bin/bash
