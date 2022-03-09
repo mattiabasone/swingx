@@ -1,4 +1,4 @@
-FROM php:7.3-cli-alpine
+FROM php:8.0-cli-alpine
 
 LABEL maintainer="Mattia Basone mattia.basone@gmail.com"
 
@@ -11,10 +11,11 @@ RUN adduser -D ${APP_USER} -u ${DEFAULT_USER_UID} -s /bin/bash && \
     mkdir -p ${APP_PATH} && chown ${APP_USER}:${APP_USER} /app && \
     apk update && \
     apk add --no-cache supervisor nginx mysql-client curl icu libpng freetype libjpeg-turbo postgresql-dev libffi-dev libsodium libzip-dev && \
-    apk add --no-cache --virtual build-dependencies freetds-dev icu-dev libxml2-dev freetype-dev libpng-dev libjpeg-turbo-dev libzip-dev g++ make autoconf libsodium-dev && \
-    docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ && \
+    apk add --no-cache --virtual build-dependencies oniguruma-dev freetds-dev icu-dev libxml2-dev freetype-dev libpng-dev libjpeg-turbo-dev libzip-dev g++ make autoconf libsodium-dev && \
+    docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ && \
     docker-php-ext-configure pdo_dblib --with-libdir=lib && \
     pecl install redis swoole && \
+    php -m && \
     docker-php-ext-install \
         bcmath \
         dom \
@@ -36,7 +37,7 @@ RUN adduser -D ${APP_USER} -u ${DEFAULT_USER_UID} -s /bin/bash && \
         redis \
         opcache \
         swoole && \
-    apk del make g++ autoconf build-dependencies && \
+    apk del make g++ autoconf build-dependencies oniguruma && \
     rm -rf /var/cache/apk/*
 
 # configurations
@@ -46,9 +47,7 @@ COPY supervisor/nginx.ini /etc/supervisor.d/nginx.ini
 COPY supervisor/swoole.ini /etc/supervisor.d/swoole.ini
 COPY system/app.cron /var/spool/cron/crontabs/app
 
-RUN curl -s https://getcomposer.org/download/1.10.19/composer.phar -o /usr/local/bin/composer-1.10.19 && \
-    chmod +x /usr/local/bin/composer-1.10.19 && \
-    curl -s https://getcomposer.org/composer-stable.phar -o /usr/local/bin/composer && \
+RUN curl -s https://getcomposer.org/composer-stable.phar -o /usr/local/bin/composer && \
     chmod +x /usr/local/bin/composer && \
     mkdir -p /run/nginx && chown ${APP_USER}:${APP_USER} /run/nginx && \
     sed -i -E "s|user nginx;|user ${APP_USER};|g" /etc/nginx/nginx.conf && \

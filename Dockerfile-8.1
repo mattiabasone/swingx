@@ -1,4 +1,4 @@
-FROM php:7.4-cli-alpine
+FROM php:8.1-cli-alpine
 
 LABEL maintainer="Mattia Basone mattia.basone@gmail.com"
 
@@ -15,7 +15,6 @@ RUN adduser -D ${APP_USER} -u ${DEFAULT_USER_UID} -s /bin/bash && \
     docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ && \
     docker-php-ext-configure pdo_dblib --with-libdir=lib && \
     pecl install redis swoole && \
-    php -m && \
     docker-php-ext-install \
         bcmath \
         dom \
@@ -31,7 +30,6 @@ RUN adduser -D ${APP_USER} -u ${DEFAULT_USER_UID} -s /bin/bash && \
         sockets \
         zip \
         pcntl \
-        tokenizer \
         xml && \
     docker-php-ext-enable \
         redis \
