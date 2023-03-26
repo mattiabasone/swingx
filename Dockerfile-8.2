@@ -1,0 +1,54 @@
+FROM php:8.2-cli-alpine
+
+LABEL maintainer="Mattia Basone mattia.basone@gmail.com"
+
+ARG DEFAULT_USER_UID=1000
+ARG APP_USER=app
+ARG APP_PATH=/app
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN adduser -D ${APP_USER} -u ${DEFAULT_USER_UID} -s /bin/bash && \
+    mkdir -p ${APP_PATH} && chown ${APP_USER}:${APP_USER} /app && \
+    apk update && \
+    apk add --no-cache supervisor nginx mysql-client curl icu libpng freetype libjpeg-turbo postgresql-dev libffi-dev libsodium libzip-dev && \
+    apk add --no-cache --virtual build-dependencies oniguruma-dev freetds-dev icu-dev libxml2-dev freetype-dev libpng-dev libjpeg-turbo-dev libzip-dev g++ make autoconf libsodium-dev && \
+    docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ && \
+    pecl install redis swoole && \
+    docker-php-ext-install \
+        bcmath \
+        dom \
+        iconv \
+        mbstring \
+        intl \
+        gd \
+        pgsql \
+        mysqli \
+        pdo_pgsql \
+        pdo_mysql \
+        sockets \
+        zip \
+        pcntl \
+        xml && \
+    docker-php-ext-enable \
+        redis \
+        opcache \
+        swoole && \
+    apk del make g++ autoconf build-dependencies oniguruma && \
+    rm -rf /var/cache/apk/*
+
+# configurations
+COPY nginx/default.conf /etc/nginx/http.d/default.conf
+COPY supervisor/cron.ini /etc/supervisor.d/cron.ini
+COPY supervisor/nginx.ini /etc/supervisor.d/nginx.ini
+COPY supervisor/swoole.ini /etc/supervisor.d/swoole.ini
+COPY system/app.cron /var/spool/cron/crontabs/app
+
+RUN curl -s https://getcomposer.org/composer-stable.phar -o /usr/local/bin/composer && \
+    chmod +x /usr/local/bin/composer && \
+    mkdir -p /run/nginx && chown ${APP_USER}:${APP_USER} /run/nginx && \
+    sed -i -E "s|user nginx;|user ${APP_USER};|g" /etc/nginx/nginx.conf && \
+    chmod 600 /var/spool/cron/crontabs/app && chown root:root /var/spool/cron/crontabs/app
+
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
+
+EXPOSE 80
